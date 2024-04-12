@@ -14,9 +14,14 @@ import {
 
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { ButtonLoading } from '../shared/ButtonLoading';
 
 export default function LoginForm() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(true);
+  const [errorText, setErrorText] = useState();
   // 1. Define form.
   const form = useForm<loginFormType>({
     resolver: zodResolver(loginFormSchema),
@@ -27,14 +32,18 @@ export default function LoginForm() {
   // 2. Submit handler.
   const onSubmit = async (values: loginFormType) => {
     console.log(values);
+    setLoading(true);
     try {
       const response = await axios.post('/api/users/login', values);
       console.log('Login is successful!', response);
       router.push('/');
     } catch (error: any) {
+      setErrorText(error.response.data.error);
+      setSuccess(false);
       console.log('Login failed', error.message);
     } finally {
       console.log('api call completed');
+      setLoading(false);
     }
   };
   return (
@@ -44,6 +53,12 @@ export default function LoginForm() {
         description='Enter your login credentials'
         content={
           <Form {...form}>
+            {!success && (
+              <p className='text-sm text-muted-foreground text-red-500'>
+                {errorText}
+              </p>
+            )}
+
             <form onSubmit={form.handleSubmit(onSubmit)}>
               <div className='flex flex-col gap-2'>
                 <FormInput
@@ -62,9 +77,13 @@ export default function LoginForm() {
                   label='Password'
                   placeholder='Enter your password'
                 />
-                <Button type='submit' className='w-full'>
-                  Submit
-                </Button>
+                {!loading ? (
+                  <Button type='submit' className='w-full'>
+                    Submit
+                  </Button>
+                ) : (
+                  <ButtonLoading />
+                )}
               </div>
             </form>
           </Form>
